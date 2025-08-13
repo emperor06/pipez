@@ -17,6 +17,7 @@
   "tooltip.pipez.distribution.nearest": "가까운 곳부터",
   "tooltip.pipez.distribution.furthest": "먼 곳부터",
   "tooltip.pipez.distribution.round_robin": "라운드 로빈",
+  "tooltip.pipez.distribution.fair": "Fair",
   "tooltip.pipez.distribution.random": "무작위",
   "tooltip.pipez.redstone_mode": "레드스톤 모드: %s",
   "tooltip.pipez.redstone_mode.ignored": "무시",

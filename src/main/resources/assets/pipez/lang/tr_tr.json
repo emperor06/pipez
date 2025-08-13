@@ -17,6 +17,7 @@
   "tooltip.pipez.distribution.nearest": "İlk En Yakındaki",
   "tooltip.pipez.distribution.furthest": "İlk En Uzaktaki",
   "tooltip.pipez.distribution.round_robin": "Sırayla",
+  "tooltip.pipez.distribution.fair": "Fair",
   "tooltip.pipez.distribution.random": "Rastgele",
   "tooltip.pipez.redstone_mode": "Redstone Modu: %s",
   "tooltip.pipez.redstone_mode.ignored": "Yoksay",

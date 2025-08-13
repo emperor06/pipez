@@ -17,6 +17,7 @@
   "tooltip.pipez.distribution.nearest": "Спочатку Найближчі",
   "tooltip.pipez.distribution.furthest": "Спочатку Дальні",
   "tooltip.pipez.distribution.round_robin": "Кругове",
+  "tooltip.pipez.distribution.fair": "Fair",
   "tooltip.pipez.distribution.random": "Випадкове",
   "tooltip.pipez.redstone_mode": "Режим Редстоуну: %s",
   "tooltip.pipez.redstone_mode.ignored": "Ігнорувати",

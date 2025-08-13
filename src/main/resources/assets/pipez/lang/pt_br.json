@@ -17,6 +17,7 @@
   "tooltip.pipez.distribution.nearest": "Mais próximo primeiro",
   "tooltip.pipez.distribution.furthest": "Mais distante primeiro",
   "tooltip.pipez.distribution.round_robin": "Alternar",
+  "tooltip.pipez.distribution.fair": "Fair",
   "tooltip.pipez.distribution.random": "Aleatório",
   "tooltip.pipez.redstone_mode": "Detecção de redstone: %s",
   "tooltip.pipez.redstone_mode.ignored": "Ignorar",

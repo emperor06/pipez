@@ -17,6 +17,7 @@
   "tooltip.pipez.distribution.nearest": "Ближайшее хранилище",
   "tooltip.pipez.distribution.furthest": "Дальнее хранилище",
   "tooltip.pipez.distribution.round_robin": "Равномерное",
+  "tooltip.pipez.distribution.fair": "Fair",
   "tooltip.pipez.distribution.random": "Случайное",
   "tooltip.pipez.redstone_mode": "Режим редстоуна: %s",
   "tooltip.pipez.redstone_mode.ignored": "Игнорировать",

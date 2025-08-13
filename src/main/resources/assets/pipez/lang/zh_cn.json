@@ -17,6 +17,7 @@
   "tooltip.pipez.distribution.nearest": "最近优先",
   "tooltip.pipez.distribution.furthest": "最远优先",
   "tooltip.pipez.distribution.round_robin": "轮询调度",
+  "tooltip.pipez.distribution.fair": "Fair",
   "tooltip.pipez.distribution.random": "随机分配",
   "tooltip.pipez.redstone_mode": "红石模式：%s",
   "tooltip.pipez.redstone_mode.ignored": "忽略",

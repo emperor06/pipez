@@ -147,6 +147,8 @@ public abstract class UpgradeTileEntity extends PipeTileEntity {
                 ArrayList<PipeTileEntity.Connection> shuffle = new ArrayList<>(getConnections());
                 Collections.shuffle(shuffle);
                 return shuffle;
+            case FAIR:
+                return getConnections();
             case NEAREST:
             case ROUND_ROBIN:
             default:
@@ -155,7 +157,7 @@ public abstract class UpgradeTileEntity extends PipeTileEntity {
     }
 
     public enum Distribution implements ICyclable<Distribution> {
-        NEAREST("nearest"), FURTHEST("furthest"), ROUND_ROBIN("round_robin"), RANDOM("random");
+        NEAREST("nearest"), FURTHEST("furthest"), ROUND_ROBIN("round_robin"), RANDOM("random"), FAIR("fair");
 
         private final String name;
 

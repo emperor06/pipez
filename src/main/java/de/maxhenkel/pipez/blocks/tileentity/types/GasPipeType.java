@@ -11,6 +11,7 @@ import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity;
 import de.maxhenkel.pipez.capabilities.ModCapabilities;
 import de.maxhenkel.pipez.datacomponents.GasData;
 import de.maxhenkel.pipez.items.ModItems;
+import de.maxhenkel.pipez.utils.Distributor;
 import de.maxhenkel.pipez.utils.MekanismUtils;
 import mekanism.api.Action;
 import mekanism.api.chemical.Chemical;
@@ -84,8 +85,45 @@ public class GasPipeType extends PipeType<Chemical, GasData> {
         List<PipeTileEntity.Connection> connections = tileEntity.getSortedConnections(side, this);
         if (tileEntity.getDistribution(side, this).equals(UpgradeTileEntity.Distribution.ROUND_ROBIN)) {
             insertEqually(tileEntity, side, connections, gasHandler);
+        } else if (tileEntity.getDistribution(side, this).equals(UpgradeTileEntity.Distribution.FAIR)) {
+            insertFair(tileEntity, side, connections, gasHandler);
         } else {
             insertOrdered(tileEntity, side, connections, gasHandler);
+        }
+    }
+
+    protected void insertFair(PipeLogicTileEntity tileEntity, Direction side, List<PipeTileEntity.Connection> connections, IChemicalHandler gasHandler) {
+        if (connections.isEmpty()) {
+            return;
+        }
+        long mbToTransfer = getRate(tileEntity, side);
+
+        for (int tank = 0; mbToTransfer > 0 && tank < gasHandler.getChemicalTanks(); tank++) {
+            ChemicalStack available = gasHandler.extractChemical(gasHandler.getChemicalInTank(tank).copy(), Action.SIMULATE);
+            if (available.isEmpty())
+                continue;
+            if (available.getAmount() > mbToTransfer)
+                available.setAmount(mbToTransfer);
+
+            Distributor distributor = new Distributor(connections.size());
+            for (var conn : connections) {
+                IChemicalHandler d = conn.getChemicalHandler();
+                long needed;
+                if (d != null
+                        && !canInsert(conn, available, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)
+                        && (needed = insertChemical(d, available, Action.SIMULATE)) > 0) {
+                    distributor.add(conn, needed);
+                }
+            }
+
+            distributor.distributeFair(available.getAmount());
+            long actuallyTransfered = 0L;
+            for (var conres : distributor) {
+                IChemicalHandler d = conres.conn.getChemicalHandler();
+                ChemicalStack stack = transfer(gasHandler, d, available.copyWithAmount(conres.value));
+                actuallyTransfered += stack.getAmount();
+            }
+            mbToTransfer -= actuallyTransfered;
         }
     }
 
@@ -163,7 +201,7 @@ public class GasPipeType extends PipeType<Chemical, GasData> {
         if (amount <= 0) {
             return ChemicalStack.EMPTY;
         }
-        return source.extractChemical(new ChemicalStack(extracted.getChemical(), amount), Action.EXECUTE);
+        return source.extractChemical(extracted.copyWithAmount(amount), Action.EXECUTE);
     }
 
     private boolean canInsert(PipeTileEntity.Connection connection, ChemicalStack stack, List<Filter<?, ?>> filters) {
@@ -195,6 +233,17 @@ public class GasPipeType extends PipeType<Chemical, GasData> {
             }
         }
         return false;
+    }
+
+    /**
+     * Helper method so insertChemical behaves like IFLuidHandler.fill(), returning the amount inserted.
+     * @param handler The handler to fill
+     * @param stack The stack to insert
+     * @param action Simulate or execute
+     * @return The amount of chemical that was actually inserted (or should have been)
+     */
+    private static long insertChemical(IChemicalHandler handler, ChemicalStack stack, Action action) {
+        return stack.getAmount() - handler.insertChemical(stack, action).getAmount();
     }
 
     @Override

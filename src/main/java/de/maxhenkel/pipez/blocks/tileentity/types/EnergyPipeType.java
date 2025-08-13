@@ -11,6 +11,7 @@ import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity;
 import de.maxhenkel.pipez.datacomponents.EnergyData;
 import de.maxhenkel.pipez.items.ModItems;
+import de.maxhenkel.pipez.utils.Distributor;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.chat.Component;
@@ -84,6 +85,8 @@ public class EnergyPipeType extends PipeType<Void, EnergyData> {
 
         if (tileEntity.getDistribution(side, this).equals(UpgradeTileEntity.Distribution.ROUND_ROBIN)) {
             insertEqually(tileEntity, side, connections, energyStorage);
+        } else if (tileEntity.getDistribution(side, this).equals(UpgradeTileEntity.Distribution.FAIR)) {
+            insertFair(tileEntity, side, connections, energyStorage);
         } else {
             insertOrdered(tileEntity, side, connections, energyStorage);
         }
@@ -103,8 +106,47 @@ public class EnergyPipeType extends PipeType<Void, EnergyData> {
 
         if (tileEntity.getDistribution(side, this).equals(UpgradeTileEntity.Distribution.ROUND_ROBIN)) {
             return receiveEqually(tileEntity, side, connections, maxTransfer, simulate);
+        } else if (tileEntity.getDistribution(side, this).equals(UpgradeTileEntity.Distribution.FAIR)) {
+            return receiveFair(tileEntity, side, connections, maxTransfer, simulate);
         } else {
             return receiveOrdered(tileEntity, side, connections, maxTransfer, simulate);
+        }
+    }
+
+    protected void insertFair(PipeLogicTileEntity tileEntity, Direction side, List<PipeTileEntity.Connection> connections, IEnergyStorage energyStorage) {
+        if (connections.isEmpty()) {
+            return;
+        }
+        int feToTransfer = Math.min(
+                getRate(tileEntity, side),
+                energyStorage.extractEnergy(Integer.MAX_VALUE, true));
+        if (feToTransfer <= 0) {
+            return;
+        }
+
+        Distributor distributor = new Distributor(connections.size());
+        for (var conn : connections) {
+            IEnergyStorage d = conn.getEnergyHandler();
+            int needed;
+            if (d != null && d.canReceive() && (needed = d.receiveEnergy(feToTransfer, true)) > 0) {
+                distributor.add(conn, needed);
+            }
+        }
+
+        distributor.distributeFair(feToTransfer);
+        int actuallyTransfered = 0;
+        for(var conres : distributor) {
+            IEnergyStorage e = conres.conn.getEnergyHandler();
+            actuallyTransfered += EnergyUtils.pushEnergy(energyStorage, e, (int) conres.value);
+        }
+
+        // Handle the remaining bits
+        int remain = feToTransfer - actuallyTransfered;
+        for (var conres : distributor) {
+            if (remain <= 0)
+                break;
+            IEnergyStorage e = conres.conn.getEnergyHandler();
+            remain -= EnergyUtils.pushEnergy(energyStorage, e, remain);
         }
     }
 
@@ -145,6 +187,46 @@ public class EnergyPipeType extends PipeType<Void, EnergyData> {
         }
 
         tileEntity.setRoundRobinIndex(side, this, p);
+    }
+
+    protected int receiveFair(PipeLogicTileEntity tileEntity, Direction side, List<PipeTileEntity.Connection> connections, int maxReceive, boolean simulate) {
+        if (connections.isEmpty() || maxReceive <= 0) {
+            return 0;
+        }
+        if (tileEntity.pushRecursion()) {
+            return 0;
+        }
+
+        Distributor distributor = new Distributor(connections.size());
+        for (var conn : connections) {
+            IEnergyStorage e = conn.getEnergyHandler();
+            int needed;
+            if (e != null && e.canReceive() && (needed = e.receiveEnergy(maxReceive, true)) > 0) {
+                distributor.add(conn, needed);
+            }
+        }
+
+        distributor.distributeFair(maxReceive);
+        int actuallyTransfered = 0;
+        for (var conres : distributor) {
+            IEnergyStorage e = conres.conn.getEnergyHandler();
+            actuallyTransfered += e.receiveEnergy((int) conres.value, simulate);
+        }
+
+        // Handle the remaining bits
+        int remain = maxReceive - actuallyTransfered;
+        int extra;
+        for (var conres : distributor) {
+            if (remain <= 0)
+                break;
+            IEnergyStorage e = conres.conn.getEnergyHandler();
+            extra = e.receiveEnergy(remain, simulate);
+            remain -= extra;
+            actuallyTransfered += extra;
+        }
+
+        tileEntity.popRecursion();
+        return actuallyTransfered;
     }
 
     protected int receiveEqually(PipeLogicTileEntity tileEntity, Direction side, List<PipeTileEntity.Connection> connections, int maxReceive, boolean simulate) {

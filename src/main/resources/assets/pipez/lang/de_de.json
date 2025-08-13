@@ -17,6 +17,7 @@
   "tooltip.pipez.distribution.nearest": "Nächste zuerst",
   "tooltip.pipez.distribution.furthest": "Weiteste zuert",
   "tooltip.pipez.distribution.round_robin": "Rundlauf",
+  "tooltip.pipez.distribution.fair": "Fair",
   "tooltip.pipez.distribution.random": "Zufällig",
   "tooltip.pipez.redstone_mode": "Rotstein Modus: %s",
   "tooltip.pipez.redstone_mode.ignored": "Ignoriert",

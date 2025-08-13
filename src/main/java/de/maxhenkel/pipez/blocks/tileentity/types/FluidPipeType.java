@@ -8,6 +8,7 @@ import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity;
 import de.maxhenkel.pipez.datacomponents.FluidData;
 import de.maxhenkel.pipez.items.ModItems;
 import de.maxhenkel.pipez.utils.ComponentUtils;
+import de.maxhenkel.pipez.utils.Distributor;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentType;
@@ -20,6 +21,7 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -78,9 +80,46 @@ public class FluidPipeType extends PipeType<Fluid, FluidData> {
 
             if (tileEntity.getDistribution(side, this).equals(UpgradeTileEntity.Distribution.ROUND_ROBIN)) {
                 insertEqually(tileEntity, side, connections, fluidHandler);
+            } else if (tileEntity.getDistribution(side, this).equals(UpgradeTileEntity.Distribution.FAIR)) {
+                insertFair(tileEntity, side, connections, fluidHandler);
             } else {
                 insertOrdered(tileEntity, side, connections, fluidHandler);
             }
+        }
+    }
+
+    protected void insertFair(PipeLogicTileEntity tileEntity, Direction side, List<PipeTileEntity.Connection> connections, IFluidHandler fluidHandler) {
+        if (connections.isEmpty()) {
+            return;
+        }
+        int mbToTransfer = getRate(tileEntity, side);;
+
+        for (int tank = 0; mbToTransfer > 0 && tank < fluidHandler.getTanks(); tank++) {
+            FluidStack available = fluidHandler.drain(fluidHandler.getFluidInTank(tank).copy(), IFluidHandler.FluidAction.SIMULATE);
+            if (available.isEmpty())
+                continue;
+            if (available.getAmount() > mbToTransfer)
+                available.setAmount(mbToTransfer);
+
+            Distributor distributor = new Distributor(connections.size());
+            for (var conn : connections) {
+                IFluidHandler d = conn.getFluidHandler();
+                int needed;
+                if (d != null
+                        && !canInsert(tileEntity.getLevel().registryAccess(), conn, available, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)
+                        && (needed = d.fill(available, FluidAction.SIMULATE)) > 0) {
+                    distributor.add(conn, needed);
+                }
+            }
+
+            distributor.distributeFair(available.getAmount());
+            int actuallyTransfered = 0;
+            for (var conres : distributor) {
+                IFluidHandler d = conres.conn.getFluidHandler();
+                FluidStack stack = FluidUtil.tryFluidTransfer(d, fluidHandler, available.copyWithAmount((int) conres.value), true);
+                actuallyTransfered += stack.getAmount();
+            }
+            mbToTransfer -= actuallyTransfered;
         }
     }
 

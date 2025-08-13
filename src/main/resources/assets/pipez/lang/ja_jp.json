@@ -17,6 +17,7 @@
   "tooltip.pipez.distribution.nearest": "近い方を優先",
   "tooltip.pipez.distribution.furthest": "遠い方を優先",
   "tooltip.pipez.distribution.round_robin": "順繰り分配",
+  "tooltip.pipez.distribution.fair": "Fair",
   "tooltip.pipez.distribution.random": "ランダム",
   "tooltip.pipez.redstone_mode": "レッドストーン：%s",
   "tooltip.pipez.redstone_mode.ignored": "無視",

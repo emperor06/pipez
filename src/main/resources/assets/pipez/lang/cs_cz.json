@@ -17,6 +17,7 @@
   "tooltip.pipez.distribution.nearest": "Nejbližší první",
   "tooltip.pipez.distribution.furthest": "Nejvzdálenejší první",
   "tooltip.pipez.distribution.round_robin": "Popořadě",
+  "tooltip.pipez.distribution.fair": "Fair",
   "tooltip.pipez.distribution.random": "Náhodně",
   "tooltip.pipez.redstone_mode": "Redstonový režim: %s",
   "tooltip.pipez.redstone_mode.ignored": "Ignorováno",

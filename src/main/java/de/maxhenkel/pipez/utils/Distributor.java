@@ -1,37 +1,10 @@
 package de.maxhenkel.pipez.utils;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity.Connection;
 
-public class Distributor implements Iterable<Distributor.ConnectionResource> {
-
-    private final List<ConnectionResource> dests;
-
-    public static class ConnectionResource {
-        public Connection conn;  // serves as an ID to identify the handler
-        public long value;       // resource needed or allocated
-
-        public ConnectionResource(Connection conn, long needed) {
-            this.conn = conn;
-            this.value = needed;
-        }
-    }
-
-    public Distributor(int size) {
-        dests = new ArrayList<ConnectionResource>(size);
-    }
-
-    public void add(Connection conn, long needed) {
-        dests.add(new ConnectionResource(conn, needed));
-    }
-
-    @Override
-    public Iterator<ConnectionResource> iterator() {
-        return dests.iterator();
-    }
+public class Distributor {
 
     /**
      * Fair distribution of <code>amount</code> among multiple destinations.
@@ -40,15 +13,19 @@ public class Distributor implements Iterable<Distributor.ConnectionResource> {
      * @param amount The maximum amount of resources to distribute
      * @return What's left undistributed (0 if everything was distributed).
      */
-    public long distributeFair(long amount) {
-        if (dests.isEmpty() || amount <= 0)
+    public static long distributeFair(List<Connection> dests, long amount) {
+        if (dests.isEmpty())
             return amount;
+        if (amount <= 0) {
+            dests.forEach(x -> x.resourcesGiven = 0);
+            return amount;
+        }
 
-        dests.sort((a, b) -> Long.compare(b.value, a.value));
+        dests.sort((a, b) -> Long.compare(b.resourcesNeeded, a.resourcesNeeded));
         int n = dests.size();
         while (n --> 0) {
-            dests.get(n).value = Math.min(amount / (n+1), dests.get(n).value);
-            amount -= dests.get(n).value;
+            dests.get(n).resourcesGiven = Math.min(amount / (n+1), dests.get(n).resourcesNeeded);
+            amount -= dests.get(n).resourcesGiven;
         }
         return amount;
     }

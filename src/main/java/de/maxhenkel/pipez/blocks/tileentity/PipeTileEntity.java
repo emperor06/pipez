@@ -57,12 +57,12 @@ public abstract class PipeTileEntity extends BlockEntity implements ITickableBlo
 
     public List<Connection> getConnections() {
         if (level == null) {
-            return new ArrayList<>();
+            return Collections.<Connection>emptyList();
         }
         if (connectionCache == null) {
             updateConnectionCache();
             if (connectionCache == null) {
-                return new ArrayList<>();
+                return Collections.<Connection>emptyList();
             }
         }
         return connectionCache;
@@ -354,6 +354,10 @@ public abstract class PipeTileEntity extends BlockEntity implements ITickableBlo
         private BlockCapabilityCache<IFluidHandler, Direction> fluidHandler;
 
         private Optional<BlockCapabilityCache<IChemicalHandler, Direction>> chemicalHandler;
+
+        // This is a hack: having Connection holding these values is very convenient and avoids creating many temporary objects.
+        public long resourcesNeeded = 0;
+        public long resourcesGiven = 0;
 
         public Connection(ServerLevel level, BlockPos pos, Direction direction, int distance) {
             this.pos = pos;

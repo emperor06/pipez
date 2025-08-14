@@ -9,6 +9,7 @@ import de.maxhenkel.pipez.blocks.ModBlocks;
 import de.maxhenkel.pipez.blocks.tileentity.PipeLogicTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity;
+import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity.Connection;
 import de.maxhenkel.pipez.datacomponents.EnergyData;
 import de.maxhenkel.pipez.items.ModItems;
 import de.maxhenkel.pipez.utils.Distributor;
@@ -124,28 +125,29 @@ public class EnergyPipeType extends PipeType<Void, EnergyData> {
             return;
         }
 
-        Distributor distributor = new Distributor(connections.size());
-        for (var conn : connections) {
+        int index = 0;
+        for (int i = 0; i < connections.size(); i++) {
+            Connection conn = connections.get(i);
             IEnergyStorage d = conn.getEnergyHandler();
-            int needed;
-            if (d != null && d.canReceive() && (needed = d.receiveEnergy(feToTransfer, true)) > 0) {
-                distributor.add(conn, needed);
+            if (d != null && d.canReceive() && (conn.resourcesNeeded = d.receiveEnergy(feToTransfer, true)) > 0) {
+                Collections.swap(connections, i, index++);
             }
         }
 
-        distributor.distributeFair(feToTransfer);
+        List<Connection> dests = connections.subList(0, index);
+        Distributor.distributeFair(dests, feToTransfer);
         int actuallyTransfered = 0;
-        for(var conres : distributor) {
-            IEnergyStorage e = conres.conn.getEnergyHandler();
-            actuallyTransfered += EnergyUtils.pushEnergy(energyStorage, e, (int) conres.value);
+        for(var conn : dests) {
+            IEnergyStorage e = conn.getEnergyHandler();
+            actuallyTransfered += EnergyUtils.pushEnergy(energyStorage, e, (int) conn.resourcesGiven);
         }
 
         // Handle the remaining bits
         int remain = feToTransfer - actuallyTransfered;
-        for (var conres : distributor) {
+        for (var conn : dests) {
             if (remain <= 0)
                 break;
-            IEnergyStorage e = conres.conn.getEnergyHandler();
+            IEnergyStorage e = conn.getEnergyHandler();
             remain -= EnergyUtils.pushEnergy(energyStorage, e, remain);
         }
     }
@@ -197,29 +199,30 @@ public class EnergyPipeType extends PipeType<Void, EnergyData> {
             return 0;
         }
 
-        Distributor distributor = new Distributor(connections.size());
-        for (var conn : connections) {
+        int index = 0;
+        for (int i = 0; i < connections.size(); i++) {
+            Connection conn = connections.get(i);
             IEnergyStorage e = conn.getEnergyHandler();
-            int needed;
-            if (e != null && e.canReceive() && (needed = e.receiveEnergy(maxReceive, true)) > 0) {
-                distributor.add(conn, needed);
+            if (e != null && e.canReceive() && (conn.resourcesNeeded = e.receiveEnergy(maxReceive, true)) > 0) {
+                Collections.swap(connections, i, index++);
             }
         }
 
-        distributor.distributeFair(maxReceive);
+        List<Connection> dests = connections.subList(0, index);
+        Distributor.distributeFair(dests, maxReceive);
         int actuallyTransfered = 0;
-        for (var conres : distributor) {
-            IEnergyStorage e = conres.conn.getEnergyHandler();
-            actuallyTransfered += e.receiveEnergy((int) conres.value, simulate);
+        for (var conn : dests) {
+            IEnergyStorage e = conn.getEnergyHandler();
+            actuallyTransfered += e.receiveEnergy((int) conn.resourcesGiven, simulate);
         }
 
         // Handle the remaining bits
         int remain = maxReceive - actuallyTransfered;
         int extra;
-        for (var conres : distributor) {
+        for (var conn : dests) {
             if (remain <= 0)
                 break;
-            IEnergyStorage e = conres.conn.getEnergyHandler();
+            IEnergyStorage e = conn.getEnergyHandler();
             extra = e.receiveEnergy(remain, simulate);
             remain -= extra;
             actuallyTransfered += extra;

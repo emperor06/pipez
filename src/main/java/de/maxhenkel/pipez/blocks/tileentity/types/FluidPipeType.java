@@ -4,6 +4,7 @@ import de.maxhenkel.pipez.*;
 import de.maxhenkel.pipez.blocks.ModBlocks;
 import de.maxhenkel.pipez.blocks.tileentity.PipeLogicTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity;
+import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity.Connection;
 import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity;
 import de.maxhenkel.pipez.datacomponents.FluidData;
 import de.maxhenkel.pipez.items.ModItems;
@@ -92,7 +93,7 @@ public class FluidPipeType extends PipeType<Fluid, FluidData> {
         if (connections.isEmpty()) {
             return;
         }
-        int mbToTransfer = getRate(tileEntity, side);;
+        int mbToTransfer = getRate(tileEntity, side);
 
         for (int tank = 0; mbToTransfer > 0 && tank < fluidHandler.getTanks(); tank++) {
             FluidStack available = fluidHandler.drain(fluidHandler.getFluidInTank(tank).copy(), IFluidHandler.FluidAction.SIMULATE);
@@ -101,22 +102,23 @@ public class FluidPipeType extends PipeType<Fluid, FluidData> {
             if (available.getAmount() > mbToTransfer)
                 available.setAmount(mbToTransfer);
 
-            Distributor distributor = new Distributor(connections.size());
-            for (var conn : connections) {
+            int index = 0;
+            for (int i = 0; i < connections.size(); i++) {
+                Connection conn = connections.get(i);
                 IFluidHandler d = conn.getFluidHandler();
-                int needed;
                 if (d != null
                         && !canInsert(tileEntity.getLevel().registryAccess(), conn, available, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)
-                        && (needed = d.fill(available, FluidAction.SIMULATE)) > 0) {
-                    distributor.add(conn, needed);
+                        && (conn.resourcesNeeded = d.fill(available, FluidAction.SIMULATE)) > 0) {
+                    Collections.swap(connections, i, index++);
                 }
             }
 
-            distributor.distributeFair(available.getAmount());
+            List<Connection> dests = connections.subList(0, index); // re-use of connections to avoid creating a new ArrayList
+            Distributor.distributeFair(dests, available.getAmount());
             int actuallyTransfered = 0;
-            for (var conres : distributor) {
-                IFluidHandler d = conres.conn.getFluidHandler();
-                FluidStack stack = FluidUtil.tryFluidTransfer(d, fluidHandler, available.copyWithAmount((int) conres.value), true);
+            for (var conn : dests) {
+                IFluidHandler d = conn.getFluidHandler();
+                FluidStack stack = FluidUtil.tryFluidTransfer(d, fluidHandler, available.copyWithAmount((int) conn.resourcesGiven), true);
                 actuallyTransfered += stack.getAmount();
             }
             mbToTransfer -= actuallyTransfered;

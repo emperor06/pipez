@@ -8,6 +8,7 @@ import de.maxhenkel.pipez.blocks.ModBlocks;
 import de.maxhenkel.pipez.blocks.tileentity.PipeLogicTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity;
+import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity.Connection;
 import de.maxhenkel.pipez.capabilities.ModCapabilities;
 import de.maxhenkel.pipez.datacomponents.GasData;
 import de.maxhenkel.pipez.items.ModItems;
@@ -105,22 +106,23 @@ public class GasPipeType extends PipeType<Chemical, GasData> {
             if (available.getAmount() > mbToTransfer)
                 available.setAmount(mbToTransfer);
 
-            Distributor distributor = new Distributor(connections.size());
-            for (var conn : connections) {
+            int index = 0;
+            for (int i = 0; i < connections.size(); i++) {
+                Connection conn = connections.get(i);
                 IChemicalHandler d = conn.getChemicalHandler();
-                long needed;
                 if (d != null
                         && !canInsert(conn, available, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)
-                        && (needed = insertChemical(d, available, Action.SIMULATE)) > 0) {
-                    distributor.add(conn, needed);
+                        && (conn.resourcesNeeded = insertChemical(d, available, Action.SIMULATE)) > 0) {
+                    Collections.swap(connections, i, index++);
                 }
             }
 
-            distributor.distributeFair(available.getAmount());
+            List<Connection> dests = connections.subList(0, index); // re-use of connections to avoid creating a new ArrayList
+            Distributor.distributeFair(dests, available.getAmount());
             long actuallyTransfered = 0L;
-            for (var conres : distributor) {
-                IChemicalHandler d = conres.conn.getChemicalHandler();
-                ChemicalStack stack = transfer(gasHandler, d, available.copyWithAmount(conres.value));
+            for (var conn : dests) {
+                IChemicalHandler d = conn.getChemicalHandler();
+                ChemicalStack stack = transfer(gasHandler, d, available.copyWithAmount(conn.resourcesGiven));
                 actuallyTransfered += stack.getAmount();
             }
             mbToTransfer -= actuallyTransfered;

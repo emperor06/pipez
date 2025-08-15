@@ -28,8 +28,8 @@ public class FluidFilter extends Filter<FluidFilter, Fluid> {
     public static final Codec<FluidFilter> CODEC = codec(FluidFilter.class, TAG_CODEC);
     public static final StreamCodec<RegistryFriendlyByteBuf, FluidFilter> STREAM_CODEC = streamCodec(FluidFilter.class, STREAM_TAG_CODEC);
 
-    public FluidFilter(UUID id, @Nullable Tag<Fluid> tag, @Nullable CompoundTag metadata, boolean exactMetadata, @Nullable DirectionalPosition destination, boolean invert) {
-        super(id, tag, metadata, exactMetadata, destination, invert);
+    public FluidFilter(UUID id, @Nullable Tag<Fluid> tag, @Nullable CompoundTag metadata, boolean exactMetadata, @Nullable DirectionalPosition destination) {
+        super(id, tag, metadata, exactMetadata, destination);
     }
 
     @Override
@@ -43,7 +43,7 @@ public class FluidFilter extends Filter<FluidFilter, Fluid> {
     }
 
     public FluidFilter() {
-        this(UUID.randomUUID(), null, null, false, null, false);
+        this(UUID.randomUUID(), null, null, false, null);
     }
 
 }

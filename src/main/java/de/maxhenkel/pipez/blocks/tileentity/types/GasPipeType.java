@@ -9,6 +9,7 @@ import de.maxhenkel.pipez.blocks.tileentity.PipeLogicTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity.Connection;
+import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity.FilterMode;
 import de.maxhenkel.pipez.capabilities.ModCapabilities;
 import de.maxhenkel.pipez.datacomponents.GasData;
 import de.maxhenkel.pipez.items.ModItems;
@@ -111,7 +112,7 @@ public class GasPipeType extends PipeType<Chemical, GasData> {
                 Connection conn = connections.get(i);
                 IChemicalHandler d = conn.getChemicalHandler();
                 if (d != null
-                        && !canInsert(conn, available, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)
+                        && canInsert(tileEntity, side, conn, available)
                         && (conn.resourcesNeeded = insertChemical(d, available, Action.SIMULATE)) > 0) {
                     Collections.swap(connections, i, index++);
                 }
@@ -148,7 +149,7 @@ public class GasPipeType extends PipeType<Chemical, GasData> {
                     if (simulatedExtract.isEmpty()) {
                         continue;
                     }
-                    if (canInsert(connection, simulatedExtract, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)) {
+                    if (!canInsert(tileEntity, side, connection, simulatedExtract)) {
                         continue;
                     }
                     ChemicalStack stack = transfer(gasHandler, destination, simulatedExtract);
@@ -187,7 +188,7 @@ public class GasPipeType extends PipeType<Chemical, GasData> {
                 if (simulatedExtract.isEmpty()) {
                     continue;
                 }
-                if (canInsert(connection, simulatedExtract, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)) {
+                if (!canInsert(tileEntity, side, connection, simulatedExtract)) {
                     continue;
                 }
                 ChemicalStack stack = transfer(gasHandler, destination, simulatedExtract);
@@ -206,22 +207,15 @@ public class GasPipeType extends PipeType<Chemical, GasData> {
         return source.extractChemical(extracted.copyWithAmount(amount), Action.EXECUTE);
     }
 
-    private boolean canInsert(PipeTileEntity.Connection connection, ChemicalStack stack, List<Filter<?, ?>> filters) {
-        for (Filter<?, Chemical> filter : filters.stream().map(filter -> (Filter<?, Chemical>) filter).filter(Filter::isInvert).filter(f -> matchesConnection(connection, f)).collect(Collectors.toList())) {
+    private boolean canInsert(PipeLogicTileEntity tileEntity, Direction side, Connection connection, ChemicalStack stack) {
+        var filters = tileEntity.getFilters(side, this);
+        boolean blacklist = FilterMode.BLACKLIST == tileEntity.getFilterMode(side, this);
+        for (Filter<?, Chemical> filter : filters.stream().map(filter -> (Filter<?, Chemical>) filter).filter(f -> matchesConnection(connection, f)).collect(Collectors.toList())) {
             if (matches(filter, stack)) {
-                return false;
+                return !blacklist;
             }
         }
-        List<Filter<?, Chemical>> collect = filters.stream().map(filter -> (Filter<?, Chemical>) filter).filter(f -> !f.isInvert()).filter(f -> matchesConnection(connection, f)).collect(Collectors.toList());
-        if (collect.isEmpty()) {
-            return true;
-        }
-        for (Filter<?, Chemical> filter : collect) {
-            if (matches(filter, stack)) {
-                return true;
-            }
-        }
-        return false;
+        return blacklist;
     }
 
     private boolean matches(Filter<?, Chemical> filter, ChemicalStack stack) {
@@ -273,7 +267,7 @@ public class GasPipeType extends PipeType<Chemical, GasData> {
         return ModItems.GAS_DATA_COMPONENT.get();
     }
 
-    private static final GasData DEFAULT = new GasData(UpgradeTileEntity.FilterMode.WHITELIST, UpgradeTileEntity.RedstoneMode.IGNORED, UpgradeTileEntity.Distribution.ROUND_ROBIN, Collections.emptyList());
+    private static final GasData DEFAULT = new GasData(UpgradeTileEntity.FilterMode.BLACKLIST, UpgradeTileEntity.RedstoneMode.IGNORED, UpgradeTileEntity.Distribution.FAIR, Collections.emptyList());
 
     @Override
     public GasData defaultData() {

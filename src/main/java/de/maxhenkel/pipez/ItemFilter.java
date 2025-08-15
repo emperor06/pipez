@@ -28,8 +28,8 @@ public class ItemFilter extends Filter<ItemFilter, Item> {
     public static final Codec<ItemFilter> CODEC = codec(ItemFilter.class, TAG_CODEC);
     public static final StreamCodec<RegistryFriendlyByteBuf, ItemFilter> STREAM_CODEC = streamCodec(ItemFilter.class, STREAM_TAG_CODEC);
 
-    public ItemFilter(UUID id, @Nullable Tag<Item> tag, @Nullable CompoundTag metadata, boolean exactMetadata, @Nullable DirectionalPosition destination, boolean invert) {
-        super(id, tag, metadata, exactMetadata, destination, invert);
+    public ItemFilter(UUID id, @Nullable Tag<Item> tag, @Nullable CompoundTag metadata, boolean exactMetadata, @Nullable DirectionalPosition destination) {
+        super(id, tag, metadata, exactMetadata, destination);
     }
 
     @Override
@@ -43,7 +43,7 @@ public class ItemFilter extends Filter<ItemFilter, Item> {
     }
 
     public ItemFilter() {
-        this(UUID.randomUUID(), null, null, false, null, false);
+        this(UUID.randomUUID(), null, null, false, null);
     }
 
 }

@@ -6,6 +6,7 @@ import de.maxhenkel.pipez.blocks.tileentity.PipeLogicTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity.Connection;
 import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity;
+import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity.FilterMode;
 import de.maxhenkel.pipez.datacomponents.FluidData;
 import de.maxhenkel.pipez.items.ModItems;
 import de.maxhenkel.pipez.utils.ComponentUtils;
@@ -107,7 +108,7 @@ public class FluidPipeType extends PipeType<Fluid, FluidData> {
                 Connection conn = connections.get(i);
                 IFluidHandler d = conn.getFluidHandler();
                 if (d != null
-                        && !canInsert(tileEntity.getLevel().registryAccess(), conn, available, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)
+                        && canInsert(tileEntity, side, conn, available)
                         && (conn.resourcesNeeded = d.fill(available, FluidAction.SIMULATE)) > 0) {
                     Collections.swap(connections, i, index++);
                 }
@@ -146,7 +147,7 @@ public class FluidPipeType extends PipeType<Fluid, FluidData> {
                     if (simulatedExtract.isEmpty()) {
                         continue;
                     }
-                    if (canInsert(tileEntity.getLevel().registryAccess(), connection, simulatedExtract, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)) {
+                    if (!canInsert(tileEntity, side, connection, simulatedExtract)) {
                         continue;
                     }
                     FluidStack stack = FluidUtil.tryFluidTransfer(destination, fluidHandler, simulatedExtract, true);
@@ -187,7 +188,7 @@ public class FluidPipeType extends PipeType<Fluid, FluidData> {
                 if (simulatedExtract.isEmpty()) {
                     continue;
                 }
-                if (canInsert(tileEntity.getLevel().registryAccess(), connection, simulatedExtract, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)) {
+                if (!canInsert(tileEntity, side, connection, simulatedExtract)) {
                     continue;
                 }
                 FluidStack stack = FluidUtil.tryFluidTransfer(destination, fluidHandler, simulatedExtract, true);
@@ -196,22 +197,16 @@ public class FluidPipeType extends PipeType<Fluid, FluidData> {
         }
     }
 
-    private boolean canInsert(HolderLookup.Provider provider, PipeTileEntity.Connection connection, FluidStack stack, List<Filter<?, ?>> filters) {
-        for (Filter<?, Fluid> filter : filters.stream().map(filter -> (Filter<?, Fluid>) filter).filter(Filter::isInvert).filter(f -> matchesConnection(connection, f)).collect(Collectors.toList())) {
+    private boolean canInsert(PipeLogicTileEntity tileEntity, Direction side, Connection connection, FluidStack stack) {
+        HolderLookup.Provider provider = tileEntity.getLevel().registryAccess();
+        var filters = tileEntity.getFilters(side, this);
+        boolean blacklist = FilterMode.BLACKLIST == tileEntity.getFilterMode(side, this);
+        for (Filter<?, Fluid> filter : filters.stream().map(filter -> (Filter<?, Fluid>) filter).filter(f -> matchesConnection(connection, f)).collect(Collectors.toList())) {
             if (matches(provider, filter, stack)) {
-                return false;
+                return !blacklist;
             }
         }
-        List<Filter<?, Fluid>> collect = filters.stream().map(filter -> (Filter<?, Fluid>) filter).filter(f -> !f.isInvert()).filter(f -> matchesConnection(connection, f)).collect(Collectors.toList());
-        if (collect.isEmpty()) {
-            return true;
-        }
-        for (Filter<?, Fluid> filter : collect) {
-            if (matches(provider, filter, stack)) {
-                return true;
-            }
-        }
-        return false;
+        return blacklist;
     }
 
     private boolean matches(HolderLookup.Provider provider, Filter<?, Fluid> filter, FluidStack stack) {
@@ -271,7 +266,7 @@ public class FluidPipeType extends PipeType<Fluid, FluidData> {
         return ModItems.FLUID_DATA_COMPONENT.get();
     }
 
-    private static final FluidData DEFAULT = new FluidData(UpgradeTileEntity.FilterMode.WHITELIST, UpgradeTileEntity.RedstoneMode.IGNORED, UpgradeTileEntity.Distribution.ROUND_ROBIN, Collections.emptyList());
+    private static final FluidData DEFAULT = new FluidData(UpgradeTileEntity.FilterMode.BLACKLIST, UpgradeTileEntity.RedstoneMode.IGNORED, UpgradeTileEntity.Distribution.FAIR, Collections.emptyList());
 
     @Override
     public FluidData defaultData() {

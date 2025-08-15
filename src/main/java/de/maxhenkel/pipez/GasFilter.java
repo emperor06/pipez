@@ -75,12 +75,12 @@ public class GasFilter extends Filter<GasFilter, Chemical> {
     public static final Codec<GasFilter> CODEC = codec(GasFilter.class, TAG_CODEC);
     public static final StreamCodec<RegistryFriendlyByteBuf, GasFilter> STREAM_CODEC = streamCodec(GasFilter.class, STREAM_TAG_CODEC);
 
-    public GasFilter(UUID id, @Nullable Tag<Chemical> tag, @Nullable CompoundTag metadata, boolean exactMetadata, @Nullable DirectionalPosition destination, boolean invert) {
-        super(id, tag, metadata, exactMetadata, destination, invert);
+    public GasFilter(UUID id, @Nullable Tag<Chemical> tag, @Nullable CompoundTag metadata, boolean exactMetadata, @Nullable DirectionalPosition destination) {
+        super(id, tag, metadata, exactMetadata, destination);
     }
 
     public GasFilter() {
-        this(UUID.randomUUID(), null, null, false, null, false);
+        this(UUID.randomUUID(), null, null, false, null);
     }
 
     @Override

@@ -26,15 +26,13 @@ public abstract class Filter<F extends Filter<F, T>, T> {
     protected boolean exactMetadata;
     @Nullable
     protected DirectionalPosition destination;
-    protected boolean invert;
 
-    public Filter(UUID id, @Nullable Tag<T> tag, @Nullable CompoundTag metadata, boolean exactMetadata, @Nullable DirectionalPosition destination, boolean invert) {
+    public Filter(UUID id, @Nullable Tag<T> tag, @Nullable CompoundTag metadata, boolean exactMetadata, @Nullable DirectionalPosition destination) {
         this.id = id;
         this.tag = tag;
         this.metadata = metadata;
         this.exactMetadata = exactMetadata;
         this.destination = destination;
-        this.invert = invert;
     }
 
     public UUID getId() {
@@ -68,14 +66,6 @@ public abstract class Filter<F extends Filter<F, T>, T> {
         this.destination = destination;
     }
 
-    public boolean isInvert() {
-        return invert;
-    }
-
-    public void setInvert(boolean invert) {
-        this.invert = invert;
-    }
-
     public boolean isExactMetadata() {
         return exactMetadata;
     }
@@ -92,7 +82,6 @@ public abstract class Filter<F extends Filter<F, T>, T> {
             copiedFilter.metadata = metadata;
             copiedFilter.exactMetadata = exactMetadata;
             copiedFilter.destination = destination;
-            copiedFilter.invert = invert;
             return (F) copiedFilter;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -141,7 +130,7 @@ public abstract class Filter<F extends Filter<F, T>, T> {
     public static <T, U extends Filter<U, T>> Codec<U> codec(Class<U> clazz, Codec<Tag<T>> tagCodec) {
         Constructor<U> constructor;
         try {
-            constructor = clazz.getDeclaredConstructor(UUID.class, Tag.class, CompoundTag.class, boolean.class, DirectionalPosition.class, boolean.class);
+            constructor = clazz.getDeclaredConstructor(UUID.class, Tag.class, CompoundTag.class, boolean.class, DirectionalPosition.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -151,11 +140,10 @@ public abstract class Filter<F extends Filter<F, T>, T> {
                     tagCodec.optionalFieldOf("Tag").forGetter(u -> Optional.ofNullable(u.getTag())),
                     CompoundTag.CODEC.optionalFieldOf("Metadata").forGetter(itemFilter -> Optional.ofNullable(itemFilter.getMetadata())),
                     Codec.BOOL.fieldOf("ExactMetadata").forGetter(Filter::isExactMetadata),
-                    DirectionalPosition.CODEC.optionalFieldOf("Destination").forGetter(itemFilter -> Optional.ofNullable(itemFilter.getDestination())),
-                    Codec.BOOL.fieldOf("Invert").forGetter(Filter::isInvert)
-            ).apply(i, (id, tag, metadata, exactMetadata, destination, invert) -> {
+                    DirectionalPosition.CODEC.optionalFieldOf("Destination").forGetter(itemFilter -> Optional.ofNullable(itemFilter.getDestination()))
+            ).apply(i, (id, tag, metadata, exactMetadata, destination) -> {
                 try {
-                    return constructor.newInstance(id, tag.orElse(null), metadata.orElse(null), exactMetadata, destination.orElse(null), invert);
+                    return constructor.newInstance(id, tag.orElse(null), metadata.orElse(null), exactMetadata, destination.orElse(null));
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -166,7 +154,7 @@ public abstract class Filter<F extends Filter<F, T>, T> {
     public static <T, U extends Filter<U, T>> StreamCodec<RegistryFriendlyByteBuf, U> streamCodec(Class<U> clazz, StreamCodec<RegistryFriendlyByteBuf, Tag<T>> tagCodec) {
         Constructor<U> constructor;
         try {
-            constructor = clazz.getDeclaredConstructor(UUID.class, Tag.class, CompoundTag.class, boolean.class, DirectionalPosition.class, boolean.class);
+            constructor = clazz.getDeclaredConstructor(UUID.class, Tag.class, CompoundTag.class, boolean.class, DirectionalPosition.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -181,11 +169,9 @@ public abstract class Filter<F extends Filter<F, T>, T> {
                 Filter::isExactMetadata,
                 ByteBufCodecs.optional(DirectionalPosition.STREAM_CODEC),
                 f -> Optional.ofNullable(f.getDestination()),
-                ByteBufCodecs.BOOL,
-                Filter::isInvert,
-                (id, tag, metadata, exactMetadata, destination, invert) -> {
+                (id, tag, metadata, exactMetadata, destination) -> {
                     try {
-                        return constructor.newInstance(id, tag.orElse(null), metadata.orElse(null), exactMetadata, destination.orElse(null), invert);
+                        return constructor.newInstance(id, tag.orElse(null), metadata.orElse(null), exactMetadata, destination.orElse(null));
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

@@ -45,7 +45,7 @@ public abstract class PipeType<T, D extends AbstractPipeTypeData<T>> {
     }
 
     public UpgradeTileEntity.Distribution getDefaultDistribution() {
-        return UpgradeTileEntity.Distribution.ROUND_ROBIN;
+        return UpgradeTileEntity.Distribution.FAIR;
     }
 
     public UpgradeTileEntity.RedstoneMode getDefaultRedstoneMode() {
@@ -53,7 +53,7 @@ public abstract class PipeType<T, D extends AbstractPipeTypeData<T>> {
     }
 
     public UpgradeTileEntity.FilterMode getDefaultFilterMode() {
-        return UpgradeTileEntity.FilterMode.WHITELIST;
+        return UpgradeTileEntity.FilterMode.BLACKLIST;
     }
 
     public int getRate(PipeLogicTileEntity tileEntity, Direction direction) {

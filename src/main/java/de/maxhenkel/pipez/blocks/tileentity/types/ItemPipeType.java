@@ -6,6 +6,8 @@ import de.maxhenkel.pipez.blocks.ModBlocks;
 import de.maxhenkel.pipez.blocks.tileentity.PipeLogicTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity;
 import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity;
+import de.maxhenkel.pipez.blocks.tileentity.PipeTileEntity.Connection;
+import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity.FilterMode;
 import de.maxhenkel.pipez.datacomponents.ItemData;
 import de.maxhenkel.pipez.items.ModItems;
 import de.maxhenkel.pipez.utils.ComponentUtils;
@@ -109,7 +111,7 @@ public class ItemPipeType extends PipeType<Item, ItemData> {
                     if (simulatedExtract.isEmpty()) {
                         continue;
                     }
-                    if (canInsert(tileEntity.getLevel().registryAccess(), connection, simulatedExtract, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)) {
+                    if (!canInsert(tileEntity, side, connection, simulatedExtract)) {
                         continue;
                     }
                     ItemStack stack = ItemHandlerHelper.insertItem(destination, simulatedExtract, false);
@@ -157,7 +159,7 @@ public class ItemPipeType extends PipeType<Item, ItemData> {
                 if (nonFittingItems.stream().anyMatch(stack -> ItemUtils.isStackable(stack, simulatedExtract))) {
                     continue;
                 }
-                if (canInsert(tileEntity.getLevel().registryAccess(), connection, simulatedExtract, tileEntity.getFilters(side, this)) == tileEntity.getFilterMode(side, this).equals(UpgradeTileEntity.FilterMode.BLACKLIST)) {
+                if (!canInsert(tileEntity, side, connection, simulatedExtract)) {
                     continue;
                 }
                 ItemStack stack = ItemHandlerHelper.insertItem(destination, simulatedExtract, false);
@@ -181,22 +183,16 @@ public class ItemPipeType extends PipeType<Item, ItemData> {
         return true;
     }
 
-    private boolean canInsert(HolderLookup.Provider provider, PipeTileEntity.Connection connection, ItemStack stack, List<Filter<?, ?>> filters) {
-        for (Filter<?, Item> filter : filters.stream().map(filter -> (Filter<?, Item>) filter).filter(Filter::isInvert).filter(f -> matchesConnection(connection, f)).collect(Collectors.toList())) {
+    private boolean canInsert(PipeLogicTileEntity tileEntity, Direction side, Connection connection, ItemStack stack) {
+        HolderLookup.Provider provider = tileEntity.getLevel().registryAccess();
+        var filters = tileEntity.getFilters(side, this);
+        boolean blacklist = FilterMode.BLACKLIST == tileEntity.getFilterMode(side, this);
+        for (Filter<?, Item> filter : filters.stream().map(filter -> (Filter<?, Item>) filter).filter(f -> matchesConnection(connection, f)).collect(Collectors.toList())) {
             if (matches(provider, filter, stack)) {
-                return false;
+                return !blacklist;
             }
         }
-        List<Filter<?, Item>> collect = filters.stream().map(filter -> (Filter<?, Item>) filter).filter(f -> !f.isInvert()).filter(f -> matchesConnection(connection, f)).collect(Collectors.toList());
-        if (collect.isEmpty()) {
-            return true;
-        }
-        for (Filter<?, Item> filter : collect) {
-            if (matches(provider, filter, stack)) {
-                return true;
-            }
-        }
-        return false;
+        return blacklist;
     }
 
     private boolean matches(HolderLookup.Provider provider, Filter<?, Item> filter, ItemStack stack) {
@@ -279,7 +275,7 @@ public class ItemPipeType extends PipeType<Item, ItemData> {
         return ModItems.ITEM_DATA_COMPONENT.get();
     }
 
-    private static final ItemData DEFAULT = new ItemData(UpgradeTileEntity.FilterMode.WHITELIST, UpgradeTileEntity.RedstoneMode.IGNORED, UpgradeTileEntity.Distribution.NEAREST, Collections.emptyList());
+    private static final ItemData DEFAULT = new ItemData(UpgradeTileEntity.FilterMode.BLACKLIST, UpgradeTileEntity.RedstoneMode.IGNORED, UpgradeTileEntity.Distribution.NEAREST, Collections.emptyList());
 
     @Override
     public ItemData defaultData() {

@@ -45,7 +45,6 @@ public class FilterScreen extends ScreenBase<FilterContainer> {
     private EditBox nbt;
 
     private CycleIconButton nbtButton;
-    private CycleIconButton invertButton;
 
     private Button submitButton;
     private Button cancelButton;
@@ -54,7 +53,6 @@ public class FilterScreen extends ScreenBase<FilterContainer> {
     private HoverArea itemTextHoverArea;
     private HoverArea nbtTextHoverArea;
     private HoverArea exactNBTHoverArea;
-    private HoverArea invertHoverArea;
     private HoverArea destinationHoverArea;
     private HoverArea destinationTextHoverArea;
 
@@ -79,11 +77,6 @@ public class FilterScreen extends ScreenBase<FilterContainer> {
             filter.setExactMetadata(!filter.isExactMetadata());
         });
         addRenderableWidget(nbtButton);
-        List<CycleIconButton.Icon> invertIcons = Arrays.asList(new CycleIconButton.Icon(BACKGROUND, 176, 32), new CycleIconButton.Icon(BACKGROUND, 192, 32));
-        invertButton = new CycleIconButton(leftPos + 149, topPos + 81, invertIcons, () -> filter.isInvert() ? 1 : 0, button -> {
-            filter.setInvert(!filter.isInvert());
-        });
-        addRenderableWidget(invertButton);
 
         cancelButton = Button.builder(Component.translatable("message.pipez.filter.cancel"), button -> {
             PacketDistributor.sendToServer(new OpenExtractMessage(getMenu().getIndex()));
@@ -166,16 +159,6 @@ public class FilterScreen extends ScreenBase<FilterContainer> {
             return tooltip.stream().map(Component::getVisualOrderText).collect(Collectors.toList());
         });
         hoverAreas.add(exactNBTHoverArea);
-        invertHoverArea = new HoverArea(150, 82, 20, 20, () -> {
-            List<Component> tooltip = new ArrayList<>();
-            if (filter.isInvert()) {
-                tooltip.add(Component.translatable("tooltip.pipez.filter.inverted"));
-            } else {
-                tooltip.add(Component.translatable("tooltip.pipez.filter.not_inverted"));
-            }
-            return tooltip.stream().map(Component::getVisualOrderText).collect(Collectors.toList());
-        });
-        hoverAreas.add(invertHoverArea);
         destinationHoverArea = new HoverArea(8, 83, 16, 16, () -> {
             List<Component> tooltip = new ArrayList<>();
             tooltip.add(Component.translatable("tooltip.pipez.filter.destination.description"));

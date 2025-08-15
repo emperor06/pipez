@@ -355,7 +355,7 @@ public class EnergyPipeType extends PipeType<Void, EnergyData> {
         return ModItems.ENERGY_DATA_COMPONENT.get();
     }
 
-    private static final EnergyData DEFAULT = new EnergyData(UpgradeTileEntity.FilterMode.WHITELIST, UpgradeTileEntity.RedstoneMode.IGNORED, UpgradeTileEntity.Distribution.ROUND_ROBIN, Collections.emptyList());
+    private static final EnergyData DEFAULT = new EnergyData(UpgradeTileEntity.FilterMode.BLACKLIST, UpgradeTileEntity.RedstoneMode.IGNORED, UpgradeTileEntity.Distribution.FAIR, Collections.emptyList());
 
     @Override
     public EnergyData defaultData() {

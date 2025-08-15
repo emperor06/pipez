@@ -84,9 +84,6 @@ public class FilterList extends WidgetBase {
                 AbstractStack<?> stack = getStack(filter);
                 if (stack != null && !stack.isEmpty()) {
                     List<Component> tooltip = stack.getTooltip();
-                    if (filter.isInvert()) {
-                        tooltip.set(0, Component.translatable("tooltip.pipez.filter.not").withStyle(ChatFormatting.DARK_RED).append(" ").append(tooltip.get(0)));
-                    }
                     if (filter.getTag() != null && !(filter.getTag() instanceof SingleElementTag)) {
                         tooltip.add(Component.translatable("tooltip.pipez.filter.accepts_tag", Component.literal(filter.getTag().getName().toString()).withStyle(ChatFormatting.BLUE)).withStyle(ChatFormatting.GRAY));
                     }
@@ -184,10 +181,6 @@ public class FilterList extends WidgetBase {
                     nbtStr.append(" ").append(Component.translatable("message.pipez.filter.nbt.exact"));
                 }
                 drawStringSmall(guiGraphics, guiLeft + 22, startY + 10, nbtStr);
-            }
-
-            if (filter.isInvert()) {
-                drawStringSmall(guiGraphics, guiLeft + 22, startY + 15, Component.translatable("message.pipez.filter.inverted").withStyle(ChatFormatting.DARK_RED));
             }
 
             if (filter.getDestination() != null) {

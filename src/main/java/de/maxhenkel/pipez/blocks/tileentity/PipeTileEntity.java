@@ -90,7 +90,7 @@ public abstract class PipeTileEntity extends BlockEntity implements ITickableBlo
             return;
         }
         PipeBlock pipeBlock = (PipeBlock) block;
-
+/*        // When a pipe can't extract anymore (neighbor lost), it disconnects and the upgrade is thrown, which can be very annoying
         PipeTileEntity pipeTe = pipeBlock.getTileEntity(world, pos);
         if (pipeTe != null) {
             for (Direction side : Direction.values()) {
@@ -105,7 +105,7 @@ public abstract class PipeTileEntity extends BlockEntity implements ITickableBlo
                 }
             }
         }
-
+*/
         travelPositions.add(pos);
         addToDirtyList(world, pos, pipeBlock, travelPositions, queue);
         while (queue.size() > 0) {

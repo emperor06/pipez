@@ -101,19 +101,18 @@ public class GasPipeType extends PipeType<Chemical, GasData> {
         long mbToTransfer = getRate(tileEntity, side);
 
         for (int tank = 0; mbToTransfer > 0 && tank < gasHandler.getChemicalTanks(); tank++) {
-            ChemicalStack available = gasHandler.extractChemical(gasHandler.getChemicalInTank(tank).copy(), Action.SIMULATE);
+            ChemicalStack available = gasHandler.extractChemical(gasHandler.getChemicalInTank(tank).copyWithAmount(mbToTransfer), Action.SIMULATE);
             if (available.isEmpty())
                 continue;
-            if (available.getAmount() > mbToTransfer)
-                available.setAmount(mbToTransfer);
 
             int index = 0;
+            ChemicalStack max = available.copyWithAmount(Long.MAX_VALUE);
             for (int i = 0; i < connections.size(); i++) {
                 Connection conn = connections.get(i);
                 IChemicalHandler d = conn.getChemicalHandler();
                 if (d != null
                         && canInsert(tileEntity, side, conn, available)
-                        && (conn.resourcesNeeded = insertChemical(d, available, Action.SIMULATE)) > 0) {
+                        && (conn.resourcesNeeded = insertChemical(d, max, Action.SIMULATE)) > 0) {
                     Collections.swap(connections, i, index++);
                 }
             }

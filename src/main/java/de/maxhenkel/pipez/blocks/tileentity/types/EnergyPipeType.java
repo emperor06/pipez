@@ -129,7 +129,7 @@ public class EnergyPipeType extends PipeType<Void, EnergyData> {
         for (int i = 0; i < connections.size(); i++) {
             Connection conn = connections.get(i);
             IEnergyStorage d = conn.getEnergyHandler();
-            if (d != null && d.canReceive() && (conn.resourcesNeeded = d.receiveEnergy(feToTransfer, true)) > 0) {
+            if (d != null && d.canReceive() && (conn.resourcesNeeded = d.receiveEnergy(Integer.MAX_VALUE, true)) > 0) {
                 Collections.swap(connections, i, index++);
             }
         }

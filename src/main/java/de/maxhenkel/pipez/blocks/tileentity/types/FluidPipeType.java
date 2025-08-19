@@ -97,19 +97,18 @@ public class FluidPipeType extends PipeType<Fluid, FluidData> {
         int mbToTransfer = getRate(tileEntity, side);
 
         for (int tank = 0; mbToTransfer > 0 && tank < fluidHandler.getTanks(); tank++) {
-            FluidStack available = fluidHandler.drain(fluidHandler.getFluidInTank(tank).copy(), IFluidHandler.FluidAction.SIMULATE);
+            FluidStack available = fluidHandler.drain(fluidHandler.getFluidInTank(tank).copyWithAmount(mbToTransfer), IFluidHandler.FluidAction.SIMULATE);
             if (available.isEmpty())
                 continue;
-            if (available.getAmount() > mbToTransfer)
-                available.setAmount(mbToTransfer);
 
+            FluidStack max = available.copyWithAmount(Integer.MAX_VALUE);
             int index = 0;
             for (int i = 0; i < connections.size(); i++) {
                 Connection conn = connections.get(i);
                 IFluidHandler d = conn.getFluidHandler();
                 if (d != null
                         && canInsert(tileEntity, side, conn, available)
-                        && (conn.resourcesNeeded = d.fill(available, FluidAction.SIMULATE)) > 0) {
+                        && (conn.resourcesNeeded = d.fill(max, FluidAction.SIMULATE)) > 0) {
                     Collections.swap(connections, i, index++);
                 }
             }

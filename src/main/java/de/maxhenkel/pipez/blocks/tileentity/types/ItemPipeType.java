@@ -11,6 +11,7 @@ import de.maxhenkel.pipez.blocks.tileentity.UpgradeTileEntity.FilterMode;
 import de.maxhenkel.pipez.datacomponents.ItemData;
 import de.maxhenkel.pipez.items.ModItems;
 import de.maxhenkel.pipez.utils.ComponentUtils;
+import de.maxhenkel.pipez.utils.Distributor;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentType;
@@ -88,9 +89,46 @@ public class ItemPipeType extends PipeType<Item, ItemData> {
 
             if (tileEntity.getDistribution(side, this).equals(UpgradeTileEntity.Distribution.ROUND_ROBIN)) {
                 insertEqually(tileEntity, side, connections, itemHandler);
+            } else if (tileEntity.getDistribution(side, this).equals(UpgradeTileEntity.Distribution.FAIR)) {
+                insertFair(tileEntity, side, connections, itemHandler);
             } else {
                 insertOrdered(tileEntity, side, connections, itemHandler);
             }
+        }
+    }
+
+    protected void insertFair(PipeLogicTileEntity tileEntity, Direction side, List<PipeTileEntity.Connection> connections, IItemHandler itemHandler) {
+        if (connections.isEmpty()) {
+            return;
+        }
+        int itemsToTransfer = getRate(tileEntity, side);
+
+        for (int slot = 0; itemsToTransfer > 0 && slot < itemHandler.getSlots(); slot++) {
+            ItemStack available = itemHandler.extractItem(slot, itemsToTransfer, true);
+            if (available.isEmpty())
+                continue;
+
+            int index = 0;
+            for (int i = 0; i < connections.size(); i++) {
+                Connection conn = connections.get(i);
+                IItemHandler d = conn.getItemHandler();
+                if (d != null
+                        && canInsert(tileEntity, side, conn, available)
+                        && (conn.resourcesNeeded = insertItem(d, available.copyWithCount(Integer.MAX_VALUE), true)) > 0) {
+                    Collections.swap(connections, i, index++);
+                }
+            }
+
+            List<Connection> dests = connections.subList(0, index); // re-use of connections to avoid creating a new ArrayList
+            Distributor.distributeFair(dests, available.getCount());
+            int actuallyTransfered = 0;
+            for (var conn : dests) {
+                IItemHandler d = conn.getItemHandler();
+                int inserted = insertItem(d, available.copyWithCount((int) conn.resourcesGiven), false);
+                itemHandler.extractItem(slot, inserted, false);
+                actuallyTransfered += inserted;
+            }
+            itemsToTransfer -= actuallyTransfered;
         }
     }
 
@@ -211,6 +249,14 @@ public class ItemPipeType extends PipeType<Item, ItemData> {
             }
         }
         return tagMatches;
+    }
+
+    /**
+     * Helper method so insertItem returns the amount actually inserted
+     * @return The amount inserted
+     */
+    private static int insertItem(IItemHandler dest, ItemStack stack, boolean simulate) {
+        return stack.getCount() - ItemHandlerHelper.insertItem(dest, stack, simulate).getCount();
     }
 
     private boolean hasNotInserted(boolean[] inventoriesFull) {

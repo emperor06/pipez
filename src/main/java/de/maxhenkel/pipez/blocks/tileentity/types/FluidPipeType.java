@@ -211,25 +211,20 @@ public class FluidPipeType extends PipeType<Fluid, FluidData> {
 
     private boolean matches(HolderLookup.Provider provider, Filter<?, Fluid> filter, FluidStack stack) {
         CompoundTag metadata = filter.getMetadata();
-        if (metadata == null) {
-            return filter.getTag() == null || filter.getTag().contains(stack.getFluid());
-        }
-        CompoundTag stackNBT = ComponentUtils.getTag(provider, stack);
-        if (filter.isExactMetadata()) {
-            if (deepExactCompare(metadata, stackNBT)) {
-                return filter.getTag() == null || filter.getTag().contains(stack.getFluid());
-            } else {
-                return false;
+        boolean tagMatches = filter.getTag() == null || filter.getTag().contains(stack.getFluid());
+        if (metadata != null) {
+            CompoundTag stackNBT = ComponentUtils.getTag(provider, stack);
+            if (filter.isExactMetadata()) {
+                return tagMatches && deepExactCompare(metadata, stackNBT);
             }
-        } else {
             if (stackNBT.isEmpty()) {
                 return metadata.size() <= 0;
             }
             if (!deepFuzzyCompare(metadata, stackNBT)) {
                 return false;
             }
-            return filter.getTag() == null || filter.getTag().contains(stack.getFluid());
         }
+        return tagMatches;
     }
 
     private boolean hasNotInserted(boolean[] inventoriesFull) {

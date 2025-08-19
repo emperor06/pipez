@@ -19,7 +19,6 @@ import net.neoforged.neoforge.capabilities.BlockCapability;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -68,35 +67,16 @@ public abstract class PipeType<T, D extends AbstractPipeTypeData<T>> {
     }
 
     public boolean deepExactCompare(Tag meta, Tag item) {
-        if (meta instanceof CompoundTag) {
-            if (!(item instanceof CompoundTag)) {
-                return false;
-            }
+        if (meta instanceof CompoundTag && item instanceof CompoundTag) {
             CompoundTag c = (CompoundTag) meta;
             CompoundTag i = (CompoundTag) item;
-            Set<String> allKeys = new HashSet<>();
-            allKeys.addAll(c.getAllKeys());
-            allKeys.addAll(i.getAllKeys());
-            for (String key : allKeys) {
-                if (c.contains(key)) {
-                    if (i.contains(key)) {
-                        Tag nbt = c.get(key);
-                        if (!deepExactCompare(nbt, i.get(key))) {
-                            return false;
-                        }
-                    } else {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            }
-            return true;
-        } else if (meta instanceof ListTag) {
-            ListTag l = (ListTag) meta;
-            if (!(item instanceof ListTag)) {
+            Set<String> cKeys = c.getAllKeys();
+            if (!cKeys.equals(i.getAllKeys())) {
                 return false;
             }
+            return cKeys.stream().allMatch(key -> deepExactCompare(c.get(key), i.get(key)));
+        } else if (meta instanceof ListTag && item instanceof ListTag) {
+            ListTag l = (ListTag) meta;
             ListTag il = (ListTag) item;
             if (!l.stream().allMatch(inbt -> il.stream().anyMatch(inbt1 -> deepExactCompare(inbt, inbt1)))) {
                 return false;
@@ -111,28 +91,12 @@ public abstract class PipeType<T, D extends AbstractPipeTypeData<T>> {
     }
 
     public boolean deepFuzzyCompare(Tag meta, Tag item) {
-        if (meta instanceof CompoundTag) {
-            if (!(item instanceof CompoundTag)) {
-                return false;
-            }
+        if (meta instanceof CompoundTag && item instanceof CompoundTag) {
             CompoundTag c = (CompoundTag) meta;
             CompoundTag i = (CompoundTag) item;
-            for (String key : c.getAllKeys()) {
-                Tag nbt = c.get(key);
-                if (i.contains(key, nbt.getId())) {
-                    if (!deepFuzzyCompare(nbt, i.get(key))) {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            }
-            return true;
-        } else if (meta instanceof ListTag) {
+            return c.getAllKeys().stream().allMatch(key -> i.contains(key, c.get(key).getId()) && deepFuzzyCompare(c.get(key), i.get(key)));
+        } else if (meta instanceof ListTag && item instanceof ListTag) {
             ListTag l = (ListTag) meta;
-            if (!(item instanceof ListTag)) {
-                return false;
-            }
             ListTag il = (ListTag) item;
             return l.stream().allMatch(inbt -> il.stream().anyMatch(inbt1 -> deepFuzzyCompare(inbt, inbt1)));
         } else {

@@ -197,25 +197,20 @@ public class ItemPipeType extends PipeType<Item, ItemData> {
 
     private boolean matches(HolderLookup.Provider provider, Filter<?, Item> filter, ItemStack stack) {
         CompoundTag metadata = filter.getMetadata();
-        if (metadata == null) {
-            return filter.getTag() == null || filter.getTag().contains(stack.getItem());
-        }
-        CompoundTag stackNBT = ComponentUtils.getTag(provider, stack);
-        if (filter.isExactMetadata()) {
-            if (deepExactCompare(metadata, stackNBT)) {
-                return filter.getTag() == null || filter.getTag().contains(stack.getItem());
-            } else {
-                return false;
+        boolean tagMatches = filter.getTag() == null || filter.getTag().contains(stack.getItem());
+        if (metadata != null) {
+            CompoundTag stackNBT = ComponentUtils.getTag(provider, stack);
+            if (filter.isExactMetadata()) {
+                return tagMatches && deepExactCompare(metadata, stackNBT);
             }
-        } else {
             if (stackNBT.isEmpty()) {
                 return metadata.size() <= 0;
             }
             if (!deepFuzzyCompare(metadata, stackNBT)) {
                 return false;
             }
-            return filter.getTag() == null || filter.getTag().contains(stack.getItem());
         }
+        return tagMatches;
     }
 
     private boolean hasNotInserted(boolean[] inventoriesFull) {
